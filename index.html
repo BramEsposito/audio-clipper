@@ -187,6 +187,23 @@
             transform: none;
         }
 
+        #previewBtn {
+            background: #f59e0b;
+            color: white;
+        }
+
+        #previewBtn:hover {
+            background: #d97706;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(245, 158, 11, 0.4);
+        }
+
+        #previewBtn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
         #downloadBtn {
             background: #48bb78;
             color: white;
@@ -275,6 +292,7 @@
         </div>
 
         <div id="controls" class="controls">
+            <button id="previewBtn" disabled>▶️ Preview Selection</button>
             <button id="extractBtn" disabled>✂️ Extract Selection</button>
             <button id="downloadBtn" disabled>⬇️ Download</button>
             <button id="resetBtn">🔄 Load New File</button>
@@ -302,6 +320,7 @@
         const playPauseBtn = document.getElementById('playPauseBtn');
         const currentTimeSpan = document.getElementById('currentTime');
         const totalTimeSpan = document.getElementById('totalTime');
+        const previewBtn = document.getElementById('previewBtn');
         const extractBtn = document.getElementById('extractBtn');
         const downloadBtn = document.getElementById('downloadBtn');
         const resetBtn = document.getElementById('resetBtn');
@@ -366,6 +385,7 @@
                 });
                 activeRegion = region;
                 updateSelectionInfo(region);
+                previewBtn.disabled = false;
                 extractBtn.disabled = false;
             });
 
@@ -376,6 +396,7 @@
 
             regionsPlugin.on('region-removed', () => {
                 activeRegion = null;
+                previewBtn.disabled = true;
                 extractBtn.disabled = true;
                 downloadBtn.disabled = true;
                 extractedBlob = null;
@@ -439,6 +460,7 @@
                 const duration = originalAudioBuffer.duration;
                 document.getElementById('originalDuration').textContent = formatTime(duration);
 
+                previewBtn.disabled = true;
                 extractBtn.disabled = true;
                 downloadBtn.disabled = true;
                 extractedBlob = null;
@@ -598,6 +620,7 @@
             controls.classList.remove('show');
             info.classList.remove('show');
             dropZone.style.display = 'block';
+            previewBtn.disabled = true;
             extractBtn.disabled = true;
             downloadBtn.disabled = true;
             playPauseBtn.textContent = '▶️';
@@ -646,6 +669,11 @@
         });
 
         // Button handlers
+        previewBtn.addEventListener('click', () => {
+            if (activeRegion) {
+                activeRegion.play();
+            }
+        });
         extractBtn.addEventListener('click', extractSelection);
         downloadBtn.addEventListener('click', downloadExtractedAudio);
         resetBtn.addEventListener('click', reset);
