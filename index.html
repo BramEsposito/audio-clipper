@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Audio Clipper - Trim MP3 Files</title>
+    <title>Audio Clipper - Trim Audio Files</title>
     <style>
         * {
             margin: 0;
@@ -247,14 +247,14 @@
 <body>
     <div class="container">
         <h1>Audio Clipper</h1>
-        <p class="subtitle">Drop an MP3 file to trim 10 seconds from the end</p>
+        <p class="subtitle">Drop an audio file to trim 10 seconds from the end</p>
 
         <div id="dropZone">
-            <p>📁 Drop MP3 file here or click to browse</p>
-            <p class="hint">Supports MP3, WAV, OGG, and other audio formats</p>
+            <p>📁 Drop audio file here or click to browse</p>
+            <p class="hint">Supports MP3, WAV, OGG, M4A, AAC, FLAC, MP4, and more</p>
         </div>
 
-        <input type="file" id="fileInput" accept="audio/*" style="display: none;">
+        <input type="file" id="fileInput" accept="audio/*,video/*,.mp3,.wav,.ogg,.m4a,.aac,.flac,.mp4" style="display: none;">
 
         <div id="status" class="status"></div>
 
@@ -561,10 +561,11 @@
             const files = e.dataTransfer.files;
             if (files.length > 0) {
                 const file = files[0];
-                if (file.type.startsWith('audio/')) {
+                // Accept audio files and video files (which may contain audio)
+                if (file.type.startsWith('audio/') || file.type.startsWith('video/') || file.name.match(/\.(mp3|wav|ogg|m4a|aac|flac|mp4|webm)$/i)) {
                     loadAudioFile(file);
                 } else {
-                    showStatus('Please drop an audio file!', 'error');
+                    showStatus('Please drop an audio or video file!', 'error');
                 }
             }
         });
