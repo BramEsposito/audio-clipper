@@ -170,18 +170,18 @@
             flex: 1;
         }
 
-        #trimBtn {
+        #extractBtn {
             background: #667eea;
             color: white;
         }
 
-        #trimBtn:hover {
+        #extractBtn:hover {
             background: #5568d3;
             transform: translateY(-1px);
             box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
         }
 
-        #trimBtn:disabled {
+        #extractBtn:disabled {
             background: #ccc;
             cursor: not-allowed;
             transform: none;
@@ -247,7 +247,7 @@
 <body>
     <div class="container">
         <h1>Audio Clipper</h1>
-        <p class="subtitle">Drop an audio file to trim 10 seconds from the end</p>
+        <p class="subtitle">Drop an audio file and drag on the waveform to select a region</p>
 
         <div id="dropZone">
             <p>📁 Drop audio file here or click to browse</p>
@@ -270,23 +270,25 @@
         </div>
 
         <div id="info" class="info">
-            <p><strong>Original Duration:</strong> <span id="originalDuration">--</span></p>
-            <p><strong>New Duration:</strong> <span id="newDuration">--</span></p>
-            <p><strong>Trimmed:</strong> <span id="trimmedAmount">10 seconds from the end</span></p>
+            <p><strong>Total Duration:</strong> <span id="originalDuration">--</span></p>
+            <p><strong>Selected:</strong> <span id="selectionInfo">Drag on waveform to select a region</span></p>
         </div>
 
         <div id="controls" class="controls">
-            <button id="trimBtn">✂️ Trim 10 Seconds</button>
-            <button id="downloadBtn" disabled>⬇️ Download Trimmed Audio</button>
+            <button id="extractBtn" disabled>✂️ Extract Selection</button>
+            <button id="downloadBtn" disabled>⬇️ Download</button>
             <button id="resetBtn">🔄 Load New File</button>
         </div>
     </div>
 
     <script src="https://unpkg.com/wavesurfer.js@7"></script>
+    <script src="https://unpkg.com/wavesurfer.js@7/dist/plugins/regions.min.js"></script>
     <script>
         let wavesurfer = null;
+        let regionsPlugin = null;
+        let activeRegion = null;
         let originalAudioBuffer = null;
-        let trimmedBlob = null;
+        let extractedBlob = null;
         let fileName = '';
 
         const dropZone = document.getElementById('dropZone');
@@ -299,7 +301,7 @@
         const playPauseBtn = document.getElementById('playPauseBtn');
         const currentTimeSpan = document.getElementById('currentTime');
         const totalTimeSpan = document.getElementById('totalTime');
-        const trimBtn = document.getElementById('trimBtn');
+        const extractBtn = document.getElementById('extractBtn');
         const downloadBtn = document.getElementById('downloadBtn');
         const resetBtn = document.getElementById('resetBtn');
 
@@ -308,6 +310,9 @@
             if (wavesurfer) {
                 wavesurfer.destroy();
             }
+
+            // Initialize Regions plugin
+            regionsPlugin = WaveSurfer.Regions.create();
 
             wavesurfer = WaveSurfer.create({
                 container: '#waveform',
@@ -320,7 +325,8 @@
                 height: 100,
                 barGap: 2,
                 normalize: true,
-                interact: true
+                interact: true,
+                plugins: [regionsPlugin]
             });
 
             // Add playback event listeners
@@ -344,12 +350,50 @@
                 const duration = wavesurfer.getDuration();
                 totalTimeSpan.textContent = formatTime(duration);
                 currentTimeSpan.textContent = '0:00';
+
+                // Enable region drawing
+                regionsPlugin.enableDragSelection({
+                    color: 'rgba(102, 126, 234, 0.3)',
+                });
             });
 
-            // Click on waveform to seek
-            wavesurfer.on('interaction', () => {
-                wavesurfer.play();
+            // Region event listeners
+            regionsPlugin.on('region-created', (region) => {
+                // Clear previous regions (only allow one at a time)
+                regionsPlugin.getRegions().forEach((r) => {
+                    if (r !== region) r.remove();
+                });
+                activeRegion = region;
+                updateSelectionInfo(region);
+                extractBtn.disabled = false;
             });
+
+            regionsPlugin.on('region-updated', (region) => {
+                activeRegion = region;
+                updateSelectionInfo(region);
+            });
+
+            regionsPlugin.on('region-removed', () => {
+                activeRegion = null;
+                extractBtn.disabled = true;
+                downloadBtn.disabled = true;
+                extractedBlob = null;
+                document.getElementById('selectionInfo').textContent = 'Drag on waveform to select a region';
+            });
+
+            // Double-click on region to play it
+            regionsPlugin.on('region-double-clicked', (region) => {
+                region.play();
+            });
+        }
+
+        // Update selection info
+        function updateSelectionInfo(region) {
+            const start = region.start;
+            const end = region.end;
+            const duration = end - start;
+            document.getElementById('selectionInfo').textContent =
+                `${formatTime(start)} - ${formatTime(end)} (${formatTime(duration)})`;
         }
 
         // Show status message
@@ -393,70 +437,68 @@
 
                 const duration = originalAudioBuffer.duration;
                 document.getElementById('originalDuration').textContent = formatTime(duration);
-                document.getElementById('newDuration').textContent = formatTime(Math.max(0, duration - 10));
 
-                trimBtn.disabled = false;
+                extractBtn.disabled = true;
                 downloadBtn.disabled = true;
-                trimmedBlob = null;
+                extractedBlob = null;
 
-                showStatus('Audio loaded successfully!', 'success');
+                showStatus('Audio loaded! Drag on the waveform to select a region.', 'success');
             } catch (error) {
                 showStatus('Error loading audio file: ' + error.message, 'error');
                 console.error('Error:', error);
             }
         }
 
-        // Trim audio (remove 10 seconds from end)
-        async function trimAudio() {
-            if (!originalAudioBuffer) return;
+        // Extract selected region
+        async function extractSelection() {
+            if (!originalAudioBuffer || !activeRegion) return;
 
-            showStatus('Trimming audio...', 'info');
-            trimBtn.disabled = true;
+            showStatus('Extracting selection...', 'info');
+            extractBtn.disabled = true;
 
             try {
                 const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                const duration = originalAudioBuffer.duration;
-                const newDuration = Math.max(0, duration - 10);
+                const start = activeRegion.start;
+                const end = activeRegion.end;
 
-                if (newDuration <= 0) {
-                    showStatus('Audio is too short to trim 10 seconds!', 'error');
-                    trimBtn.disabled = false;
+                // Calculate the sample positions
+                const numberOfChannels = originalAudioBuffer.numberOfChannels;
+                const sampleRate = originalAudioBuffer.sampleRate;
+                const startSample = Math.floor(start * sampleRate);
+                const endSample = Math.floor(end * sampleRate);
+                const newLength = endSample - startSample;
+
+                if (newLength <= 0) {
+                    showStatus('Invalid selection!', 'error');
+                    extractBtn.disabled = false;
                     return;
                 }
 
-                // Create new buffer with trimmed duration
-                const numberOfChannels = originalAudioBuffer.numberOfChannels;
-                const sampleRate = originalAudioBuffer.sampleRate;
-                const newLength = Math.floor(newDuration * sampleRate);
-
-                const trimmedBuffer = audioContext.createBuffer(
+                // Create new buffer with selected region
+                const extractedBuffer = audioContext.createBuffer(
                     numberOfChannels,
                     newLength,
                     sampleRate
                 );
 
-                // Copy audio data (excluding last 10 seconds)
+                // Copy audio data from the selected region
                 for (let channel = 0; channel < numberOfChannels; channel++) {
                     const originalData = originalAudioBuffer.getChannelData(channel);
-                    const trimmedData = trimmedBuffer.getChannelData(channel);
+                    const extractedData = extractedBuffer.getChannelData(channel);
                     for (let i = 0; i < newLength; i++) {
-                        trimmedData[i] = originalData[i];
+                        extractedData[i] = originalData[startSample + i];
                     }
                 }
 
                 // Convert buffer to WAV blob
-                trimmedBlob = await bufferToWave(trimmedBuffer, sampleRate);
-
-                // Load trimmed audio into wavesurfer
-                const url = URL.createObjectURL(trimmedBlob);
-                await wavesurfer.load(url);
+                extractedBlob = await bufferToWave(extractedBuffer, sampleRate);
 
                 downloadBtn.disabled = false;
-                showStatus('Audio trimmed successfully!', 'success');
+                showStatus('Selection extracted! Ready to download.', 'success');
             } catch (error) {
-                showStatus('Error trimming audio: ' + error.message, 'error');
+                showStatus('Error extracting selection: ' + error.message, 'error');
                 console.error('Error:', error);
-                trimBtn.disabled = false;
+                extractBtn.disabled = false;
             }
         }
 
@@ -506,14 +548,14 @@
             }
         }
 
-        // Download trimmed audio
-        function downloadTrimmedAudio() {
-            if (!trimmedBlob) return;
+        // Download extracted audio
+        function downloadExtractedAudio() {
+            if (!extractedBlob) return;
 
-            const url = URL.createObjectURL(trimmedBlob);
+            const url = URL.createObjectURL(extractedBlob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = fileName.replace(/\.[^/.]+$/, '') + '_trimmed.wav';
+            a.download = fileName.replace(/\.[^/.]+$/, '') + '_extracted.wav';
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
@@ -528,8 +570,10 @@
                 wavesurfer.destroy();
                 wavesurfer = null;
             }
+            regionsPlugin = null;
+            activeRegion = null;
             originalAudioBuffer = null;
-            trimmedBlob = null;
+            extractedBlob = null;
             fileName = '';
 
             waveformContainer.style.display = 'none';
@@ -537,7 +581,7 @@
             controls.classList.remove('show');
             info.classList.remove('show');
             dropZone.style.display = 'block';
-            trimBtn.disabled = false;
+            extractBtn.disabled = true;
             downloadBtn.disabled = true;
             playPauseBtn.textContent = '▶️';
         }
@@ -585,8 +629,8 @@
         });
 
         // Button handlers
-        trimBtn.addEventListener('click', trimAudio);
-        downloadBtn.addEventListener('click', downloadTrimmedAudio);
+        extractBtn.addEventListener('click', extractSelection);
+        downloadBtn.addEventListener('click', downloadExtractedAudio);
         resetBtn.addEventListener('click', reset);
     </script>
 </body>
