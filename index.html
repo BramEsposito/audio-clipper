@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audio Clipper - Trim MP3 Files</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 40px;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        #dropZone {
+            border: 3px dashed #667eea;
+            border-radius: 8px;
+            padding: 60px 20px;
+            text-align: center;
+            background: #f8f9ff;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 30px;
+        }
+
+        #dropZone:hover {
+            background: #f0f2ff;
+            border-color: #764ba2;
+        }
+
+        #dropZone.dragover {
+            background: #e8ebff;
+            border-color: #764ba2;
+            border-style: solid;
+        }
+
+        #dropZone p {
+            color: #667eea;
+            font-size: 18px;
+            font-weight: 500;
+        }
+
+        #dropZone .hint {
+            color: #999;
+            font-size: 14px;
+            margin-top: 10px;
+        }
+
+        #waveformContainer {
+            display: none;
+            margin-bottom: 30px;
+        }
+
+        #waveform {
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .info {
+            background: #f8f9ff;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            display: none;
+        }
+
+        .info.show {
+            display: block;
+        }
+
+        .info p {
+            color: #333;
+            font-size: 14px;
+            margin: 5px 0;
+        }
+
+        .info strong {
+            color: #667eea;
+        }
+
+        .controls {
+            display: none;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .controls.show {
+            display: flex;
+        }
+
+        button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            flex: 1;
+        }
+
+        #trimBtn {
+            background: #667eea;
+            color: white;
+        }
+
+        #trimBtn:hover {
+            background: #5568d3;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        #trimBtn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        #downloadBtn {
+            background: #48bb78;
+            color: white;
+        }
+
+        #downloadBtn:hover {
+            background: #38a169;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(72, 187, 120, 0.4);
+        }
+
+        #downloadBtn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        #resetBtn {
+            background: #e53e3e;
+            color: white;
+        }
+
+        #resetBtn:hover {
+            background: #c53030;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(229, 62, 62, 0.4);
+        }
+
+        .status {
+            text-align: center;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 6px;
+            font-size: 14px;
+            display: none;
+        }
+
+        .status.show {
+            display: block;
+        }
+
+        .status.success {
+            background: #c6f6d5;
+            color: #22543d;
+        }
+
+        .status.error {
+            background: #fed7d7;
+            color: #742a2a;
+        }
+
+        .status.info {
+            background: #bee3f8;
+            color: #2c5282;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Audio Clipper</h1>
+        <p class="subtitle">Drop an MP3 file to trim 10 seconds from the end</p>
+
+        <div id="dropZone">
+            <p>📁 Drop MP3 file here or click to browse</p>
+            <p class="hint">Supports MP3, WAV, OGG, and other audio formats</p>
+        </div>
+
+        <input type="file" id="fileInput" accept="audio/*" style="display: none;">
+
+        <div id="status" class="status"></div>
+
+        <div id="waveformContainer">
+            <div id="waveform"></div>
+        </div>
+
+        <div id="info" class="info">
+            <p><strong>Original Duration:</strong> <span id="originalDuration">--</span></p>
+            <p><strong>New Duration:</strong> <span id="newDuration">--</span></p>
+            <p><strong>Trimmed:</strong> <span id="trimmedAmount">10 seconds from the end</span></p>
+        </div>
+
+        <div id="controls" class="controls">
+            <button id="trimBtn">✂️ Trim 10 Seconds</button>
+            <button id="downloadBtn" disabled>⬇️ Download Trimmed Audio</button>
+            <button id="resetBtn">🔄 Load New File</button>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/wavesurfer.js@7"></script>
+    <script>
+        let wavesurfer = null;
+        let originalAudioBuffer = null;
+        let trimmedBlob = null;
+        let fileName = '';
+
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('fileInput');
+        const waveformContainer = document.getElementById('waveformContainer');
+        const controls = document.getElementById('controls');
+        const info = document.getElementById('info');
+        const status = document.getElementById('status');
+        const trimBtn = document.getElementById('trimBtn');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const resetBtn = document.getElementById('resetBtn');
+
+        // Initialize WaveSurfer
+        function initWaveSurfer() {
+            if (wavesurfer) {
+                wavesurfer.destroy();
+            }
+
+            wavesurfer = WaveSurfer.create({
+                container: '#waveform',
+                waveColor: '#667eea',
+                progressColor: '#764ba2',
+                cursorColor: '#764ba2',
+                barWidth: 2,
+                barRadius: 3,
+                cursorWidth: 2,
+                height: 100,
+                barGap: 2,
+                normalize: true,
+                interact: true
+            });
+        }
+
+        // Show status message
+        function showStatus(message, type = 'info') {
+            status.textContent = message;
+            status.className = `status show ${type}`;
+            setTimeout(() => {
+                status.classList.remove('show');
+            }, 3000);
+        }
+
+        // Format time in seconds to readable format
+        function formatTime(seconds) {
+            const mins = Math.floor(seconds / 60);
+            const secs = Math.floor(seconds % 60);
+            return `${mins}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        // Load audio file
+        async function loadAudioFile(file) {
+            fileName = file.name;
+            showStatus('Loading audio file...', 'info');
+
+            try {
+                initWaveSurfer();
+
+                const arrayBuffer = await file.arrayBuffer();
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                originalAudioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+
+                const blob = new Blob([arrayBuffer], { type: file.type });
+                const url = URL.createObjectURL(blob);
+
+                await wavesurfer.load(url);
+
+                waveformContainer.style.display = 'block';
+                controls.classList.add('show');
+                info.classList.add('show');
+                dropZone.style.display = 'none';
+
+                const duration = originalAudioBuffer.duration;
+                document.getElementById('originalDuration').textContent = formatTime(duration);
+                document.getElementById('newDuration').textContent = formatTime(Math.max(0, duration - 10));
+
+                trimBtn.disabled = false;
+                downloadBtn.disabled = true;
+                trimmedBlob = null;
+
+                showStatus('Audio loaded successfully!', 'success');
+            } catch (error) {
+                showStatus('Error loading audio file: ' + error.message, 'error');
+                console.error('Error:', error);
+            }
+        }
+
+        // Trim audio (remove 10 seconds from end)
+        async function trimAudio() {
+            if (!originalAudioBuffer) return;
+
+            showStatus('Trimming audio...', 'info');
+            trimBtn.disabled = true;
+
+            try {
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const duration = originalAudioBuffer.duration;
+                const newDuration = Math.max(0, duration - 10);
+
+                if (newDuration <= 0) {
+                    showStatus('Audio is too short to trim 10 seconds!', 'error');
+                    trimBtn.disabled = false;
+                    return;
+                }
+
+                // Create new buffer with trimmed duration
+                const numberOfChannels = originalAudioBuffer.numberOfChannels;
+                const sampleRate = originalAudioBuffer.sampleRate;
+                const newLength = Math.floor(newDuration * sampleRate);
+
+                const trimmedBuffer = audioContext.createBuffer(
+                    numberOfChannels,
+                    newLength,
+                    sampleRate
+                );
+
+                // Copy audio data (excluding last 10 seconds)
+                for (let channel = 0; channel < numberOfChannels; channel++) {
+                    const originalData = originalAudioBuffer.getChannelData(channel);
+                    const trimmedData = trimmedBuffer.getChannelData(channel);
+                    for (let i = 0; i < newLength; i++) {
+                        trimmedData[i] = originalData[i];
+                    }
+                }
+
+                // Convert buffer to WAV blob
+                trimmedBlob = await bufferToWave(trimmedBuffer, sampleRate);
+
+                // Load trimmed audio into wavesurfer
+                const url = URL.createObjectURL(trimmedBlob);
+                await wavesurfer.load(url);
+
+                downloadBtn.disabled = false;
+                showStatus('Audio trimmed successfully!', 'success');
+            } catch (error) {
+                showStatus('Error trimming audio: ' + error.message, 'error');
+                console.error('Error:', error);
+                trimBtn.disabled = false;
+            }
+        }
+
+        // Convert AudioBuffer to WAV Blob
+        function bufferToWave(buffer, sampleRate) {
+            const numberOfChannels = buffer.numberOfChannels;
+            const length = buffer.length * numberOfChannels * 2;
+            const arrayBuffer = new ArrayBuffer(44 + length);
+            const view = new DataView(arrayBuffer);
+
+            // WAV header
+            writeString(view, 0, 'RIFF');
+            view.setUint32(4, 36 + length, true);
+            writeString(view, 8, 'WAVE');
+            writeString(view, 12, 'fmt ');
+            view.setUint32(16, 16, true);
+            view.setUint16(20, 1, true);
+            view.setUint16(22, numberOfChannels, true);
+            view.setUint32(24, sampleRate, true);
+            view.setUint32(28, sampleRate * numberOfChannels * 2, true);
+            view.setUint16(32, numberOfChannels * 2, true);
+            view.setUint16(34, 16, true);
+            writeString(view, 36, 'data');
+            view.setUint32(40, length, true);
+
+            // Write audio data
+            const channels = [];
+            for (let i = 0; i < numberOfChannels; i++) {
+                channels.push(buffer.getChannelData(i));
+            }
+
+            let offset = 44;
+            for (let i = 0; i < buffer.length; i++) {
+                for (let channel = 0; channel < numberOfChannels; channel++) {
+                    const sample = Math.max(-1, Math.min(1, channels[channel][i]));
+                    view.setInt16(offset, sample < 0 ? sample * 0x8000 : sample * 0x7FFF, true);
+                    offset += 2;
+                }
+            }
+
+            return new Blob([arrayBuffer], { type: 'audio/wav' });
+        }
+
+        function writeString(view, offset, string) {
+            for (let i = 0; i < string.length; i++) {
+                view.setUint8(offset + i, string.charCodeAt(i));
+            }
+        }
+
+        // Download trimmed audio
+        function downloadTrimmedAudio() {
+            if (!trimmedBlob) return;
+
+            const url = URL.createObjectURL(trimmedBlob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = fileName.replace(/\.[^/.]+$/, '') + '_trimmed.wav';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+
+            showStatus('Download started!', 'success');
+        }
+
+        // Reset to initial state
+        function reset() {
+            if (wavesurfer) {
+                wavesurfer.destroy();
+                wavesurfer = null;
+            }
+            originalAudioBuffer = null;
+            trimmedBlob = null;
+            fileName = '';
+
+            waveformContainer.style.display = 'none';
+            controls.classList.remove('show');
+            info.classList.remove('show');
+            dropZone.style.display = 'block';
+            trimBtn.disabled = false;
+            downloadBtn.disabled = true;
+        }
+
+        // Drag and drop handlers
+        dropZone.addEventListener('click', () => fileInput.click());
+
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('dragover');
+        });
+
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.classList.remove('dragover');
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('dragover');
+
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                const file = files[0];
+                if (file.type.startsWith('audio/')) {
+                    loadAudioFile(file);
+                } else {
+                    showStatus('Please drop an audio file!', 'error');
+                }
+            }
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                loadAudioFile(file);
+            }
+        });
+
+        // Button handlers
+        trimBtn.addEventListener('click', trimAudio);
+        downloadBtn.addEventListener('click', downloadTrimmedAudio);
+        resetBtn.addEventListener('click', reset);
+    </script>
+</body>
+</html>
