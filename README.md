@@ -30,13 +30,14 @@ A simple web application to extract custom regions from audio files using WaveSu
 3. The waveform will display showing your audio
 4. **Drag on the waveform** to select the region you want to extract
 5. Adjust the region by dragging the edges (handles appear on hover)
-6. Double-click the region to preview it
+6. Click **"Preview Selection"** to listen to your selected region
 7. Click **"Extract Selection"** to prepare the selected audio
 8. Click **"Download"** to save the extracted region as MP3
 9. Click **"Load New File"** to start over with a different file
 
 **Tips:**
 - Click the play button to listen to the full audio
+- Click "Preview Selection" button (or double-click the region) to hear your selection
 - Only one region can be selected at a time
 - The selection info shows start time, end time, and duration
 
