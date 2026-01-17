@@ -9,7 +9,7 @@ A simple web application to extract custom regions from audio files using WaveSu
 - 🖱️ Interactive region selection - drag on the waveform to select any portion
 - ▶️ Playback controls with time display
 - ✂️ Extract selected regions from your audio
-- ⬇️ Download extracted audio as WAV format
+- ⬇️ Download extracted audio as compressed MP3 format (128 kbps)
 - 🎨 Beautiful, modern UI with gradient background
 
 ## Supported Formats
@@ -32,7 +32,7 @@ A simple web application to extract custom regions from audio files using WaveSu
 5. Adjust the region by dragging the edges (handles appear on hover)
 6. Double-click the region to preview it
 7. Click **"Extract Selection"** to prepare the selected audio
-8. Click **"Download"** to save the extracted region as WAV
+8. Click **"Download"** to save the extracted region as MP3
 9. Click **"Load New File"** to start over with a different file
 
 **Tips:**
@@ -46,7 +46,9 @@ A simple web application to extract custom regions from audio files using WaveSu
 - WaveSurfer Regions plugin for interactive region selection
 - Pure client-side processing (no server required)
 - Web Audio API for audio manipulation
-- Exports extracted audio as WAV format
+- lamejs library for MP3 encoding
+- Exports extracted audio as MP3 format (128 kbps bitrate)
+- Typical file size: ~1MB per minute of audio
 
 ## Requirements
 
