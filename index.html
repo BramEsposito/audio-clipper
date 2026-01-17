@@ -86,7 +86,7 @@
 
         .playback-controls {
             display: none;
-            align-items: center;
+            flex-direction: column;
             gap: 15px;
             margin-bottom: 20px;
             padding: 15px;
@@ -96,6 +96,26 @@
 
         .playback-controls.show {
             display: flex;
+        }
+
+        .playback-buttons {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .playback-button-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .playback-button-wrapper label {
+            font-size: 12px;
+            color: #666;
+            font-weight: 500;
         }
 
         #playPauseBtn {
@@ -120,11 +140,41 @@
             box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
         }
 
+        #previewBtn {
+            background: #f59e0b;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            font-size: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        #previewBtn:hover {
+            background: #d97706;
+            transform: scale(1.05);
+            box-shadow: 0 4px 12px rgba(245, 158, 11, 0.4);
+        }
+
+        #previewBtn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
         .time-display {
             font-size: 14px;
             color: #667eea;
             font-weight: 600;
             font-variant-numeric: tabular-nums;
+            text-align: center;
         }
 
         .info {
@@ -182,23 +232,6 @@
         }
 
         #extractBtn:disabled {
-            background: #ccc;
-            cursor: not-allowed;
-            transform: none;
-        }
-
-        #previewBtn {
-            background: #f59e0b;
-            color: white;
-        }
-
-        #previewBtn:hover {
-            background: #d97706;
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(245, 158, 11, 0.4);
-        }
-
-        #previewBtn:disabled {
             background: #ccc;
             cursor: not-allowed;
             transform: none;
@@ -280,9 +313,18 @@
         </div>
 
         <div id="playbackControls" class="playback-controls">
-            <button id="playPauseBtn">▶️</button>
             <div class="time-display">
                 <span id="currentTime">0:00</span> / <span id="totalTime">0:00</span>
+            </div>
+            <div class="playback-buttons">
+                <div class="playback-button-wrapper">
+                    <button id="playPauseBtn">▶️</button>
+                    <label>Play Full</label>
+                </div>
+                <div class="playback-button-wrapper">
+                    <button id="previewBtn" disabled>▶️</button>
+                    <label>Preview Selection</label>
+                </div>
             </div>
         </div>
 
@@ -292,7 +334,6 @@
         </div>
 
         <div id="controls" class="controls">
-            <button id="previewBtn" disabled>▶️ Preview Selection</button>
             <button id="extractBtn" disabled>✂️ Extract Selection</button>
             <button id="downloadBtn" disabled>⬇️ Download</button>
             <button id="resetBtn">🔄 Load New File</button>
