@@ -39,6 +39,21 @@ A simple web application to trim 10 seconds from the end of audio files using Wa
 - No installation or build process required
 - Just open the HTML file in your browser
 
+## Deployment to GitHub Pages
+
+To deploy this application to GitHub Pages:
+
+1. Go to your GitHub repository: https://github.com/BramEsposito/audio-clipper
+2. Click on **Settings** tab
+3. Scroll down to **Pages** section in the left sidebar
+4. Under **Source**, select the branch `claude/audio-trim-wavesurfer-Q6mCg`
+5. Keep the folder as `/ (root)`
+6. Click **Save**
+7. Wait a few minutes for GitHub to build and deploy
+8. Your site will be available at: https://bramesposito.github.io/audio-clipper/
+
+Note: If you don't see the branch in the dropdown, make sure it has been pushed to GitHub.
+
 ## Live Demo
 
-Simply open `index.html` in your browser to start using the application.
+Once deployed to GitHub Pages, visit the URL above. Alternatively, open `index.html` locally in your browser.
